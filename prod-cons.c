@@ -28,7 +28,7 @@
 #define qNum 128
 #define functionsNum 2
 
-void *producer(void *tid);
+void *producer(void *timer);
 
 void *consumer(void *tid);
 
@@ -86,8 +86,15 @@ void consumerPrint(int a);
 
 void consumerCalculate(int a);
 
+void timerInit(timer *t);
+
+void start(timer *t);
+
+void startat(timer *t, int y, int m, int d, int h, int min, int sec);
+
+pthread_t pro[pNum], con[qNum]; // Producer and Consumer threads
+
 int main() {
-    pthread_t pro[pNum], con[qNum]; // Producer and Consumer threads
     countEmpty = 0;
     countFull = 0;
     indexTimes = 0;
@@ -117,13 +124,15 @@ int main() {
     }
 
     // Thread Creation
-    for (int tid = 0; tid < pNum; ++tid) {
-        pthread_create(&pro[tid], NULL, producer, tid); // Create the Producer thread
-    }
+//    for (int tid = 0; tid < pNum; ++tid) {
+//        pthread_create(&pro[tid], NULL, producer, tid); // Create the Producer thread
+//    }
     areProducersActive = 1;
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_create(&con[tid], NULL, consumer, tid); // Create the Consumer thread
     }
+
+    // TODO Create Timers
 
     // Thread Join
     for (int tid = 0; tid < pNum; ++tid) {
@@ -146,15 +155,60 @@ int main() {
     fprintf(fp, "\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
     fclose(fp);
 
+    printf("\n28/9/20 15:36\n");
+
     return 0;
 }
 
-void *producer(void *tid) {
+void timerInit(timer *t) {
+    pthread_create(&pro[0], NULL, producer, t); // Create the Producer thread
+}
+
+void start(timer *t) {
+    // Initialize the timer
+    t->StartDelay = 0;
+    timerInit(t);
+}
+
+void startat(timer *t, int y, int m, int d, int h, int min, int sec) {
+    // TODO Calculate the time until initialization and add info to StartDelay of timer t
+    time_t now_t, future_t;
+    struct tm future_tm;
+    double differnce_in_seconds;
+
+    future_tm.tm_year = y - 1900;
+    future_tm.tm_mon = m - 1;
+    future_tm.tm_mday = d;
+    future_tm.tm_hour = h;
+    future_tm.tm_min = min;
+    future_tm.tm_sec = sec;
+    future_tm.tm_isdst = -1;
+    future_t = mktime(&future_tm);
+    if (future_t == -1) {
+        printf("Error: unable to make time using mktime. Aborting initialization of timer...\n");
+        return;
+    }
+
+    time(&now_t);
+
+    differnce_in_seconds = difftime(future_t, now_t);
+    if (differnce_in_seconds < 0) {
+        printf("Please provide a future timestamp for the timer, not a past one. Aborting initialization of timer...\n");
+        return;
+    }
+//    printf("Difference in seconds = %f\n", differnce_in_seconds);
+    t->StartDelay = (int) differnce_in_seconds;
+
+    // Initialize the timer
+    //timerInit(t);
+}
+
+void *producer(void *t) {
     //queue *fifo;
     int i;
+    timer *t_casted = (timer *) t;
 
     //fifo = (queue *) q;
-
     for (i = 0; i < LOOP; i++) {
         workFunction *wF = (workFunction *) malloc(sizeof(workFunction)); // workFunction to add malloc
         functionArgument *fArg = (functionArgument *) malloc(sizeof(functionArgument));
@@ -180,34 +234,34 @@ void *producer(void *tid) {
         //usleep(100000);
     }
 
-    printf("producer %d: RETURNED.\n", (int) tid);
+    printf("producer %d: RETURNED.\n", (int) t_casted->tid); // Prints the ID the timer
     return (NULL);
 }
 
 void *consumer(void *tid) {
     //queue *fifo;
     int i;
-    workFunction *d;
+    workFunction *wF;
 
     //fifo = (queue *) q;
     while (1) {
         //for (i = 0; i < LOOP; i++) {
         struct timeval now, res;
-        pthread_mutex_lock(fifo->mut);
+        pthread_mutex_lock(fifo->mut); // Try to get the mutex lock.
         while (fifo->empty) {
             if (areProducersActive == 0) {
                 pthread_mutex_unlock(fifo->mut);
-                printf("consumer %d: RETURNED.\n", (int) tid);
+                printf("consumer %wF: RETURNED.\n", (int) tid);
                 return (NULL);
             }
-            //printf("consumer %d: queue EMPTY.\n", (int) tid);
+            //printf("consumer %wF: queue EMPTY.\n", (int) tid);
             countEmpty++;
             pthread_cond_wait(fifo->notEmpty, fifo->mut);
 
         }
         gettimeofday(&now, NULL);
-        queueDel(fifo, &d);
-        timersub(&now, ((functionArgument *) (d->arg))->tv, &res);
+        queueDel(fifo, &wF);
+        timersub(&now, ((functionArgument *) (wF->arg))->tv, &res);
         //fprintf(fp, "%ld\n", res.tv_sec * 1000000 + res.tv_usec);
         //printf("%ld\n", res.tv_sec * 1000000 + res.tv_usec);
         times[indexTimes] = res.tv_sec * 1000000 + res.tv_usec;
@@ -215,14 +269,14 @@ void *consumer(void *tid) {
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notFull);
         //pthread_cond_broadcast(fifo->notFull);
-        //printf("consumer %d: recieved %d, after %ld.\n", (int) tid, d->arg, res.tv_sec * 1000000 + res.tv_usec);
-        //printf("consumer %d:", (int) tid);
-        functionArgument *fATemp = d->arg;
-        (*(d->work))(fATemp->args); // Execute function
-        //printf(" after %d.\n", res.tv_sec * 1000000 + res.tv_usec);
-        free(((functionArgument *) (d->arg))->tv);
-        free(d->arg);
-        free(d); // workFunction to delete free
+        //printf("consumer %wF: recieved %wF, after %ld.\n", (int) tid, wF->arg, res.tv_sec * 1000000 + res.tv_usec);
+        //printf("consumer %wF:", (int) tid);
+        functionArgument *fATemp = wF->arg;
+        (*(wF->work))(fATemp->args); // Execute function
+        //printf(" after %wF.\n", res.tv_sec * 1000000 + res.tv_usec);
+        free(((functionArgument *) (wF->arg))->tv);
+        free(wF->arg);
+        free(wF); // workFunction to delete free
 //usleep(200000);
     }
 
