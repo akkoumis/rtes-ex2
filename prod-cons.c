@@ -52,6 +52,20 @@ typedef struct {
     pthread_cond_t *notFull, *notEmpty; // Condition variables for
 } queue;
 
+// Structure representing the timer
+typedef struct {
+    int Period, // Time between the calls of the TimerFcn function, in milliseconds.
+    TasksToExecute, // Non-negative integer = how many times is TimerFcn to be called.
+    StartDelay, // Non-negative integer = time before the first call of TimerFcn.
+    tid; // ID number of the timer/thread.
+
+    void *(*StartFcn)(void *); // Function to be executed during the initialization of the timer.
+    void *(*StopFcn)(void *); // Function to be executed before the timer is destroyed.
+    void *(*TimerFcn)(void *); // Main function to be executed periodically.
+    void *(*ErrorFcn)(void *); // Error function to be executed when FIFO is full.
+    void *UserData;
+} timer;
+
 queue *fifo; // The queue
 int areProducersActive; // Flag whether there is at least one producer thread active
 FILE *fp;

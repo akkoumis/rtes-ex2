@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(ex2 C)
+project(ex2)
 
+#set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 11)
 #set(THREADS_PREFER_PTHREAD_FLAG ON)
 
@@ -11,6 +12,7 @@ set(CMAKE_C_STANDARD 11)
 #set(CMAKE_CXX_FLAGS "-lpthread")
 
 add_executable(ex2
+        #prod-cons.c Timer.cpp Timer.h)
         prod-cons.c)
 
 target_link_libraries(ex2 pthread)
