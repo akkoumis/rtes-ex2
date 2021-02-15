@@ -57,7 +57,7 @@ typedef struct {
     int Period, // Time between the calls of the TimerFcn function, in milliseconds.
     TasksToExecute, // Non-negative integer = how many times is TimerFcn to be called.
     StartDelay, // Non-negative integer = time before the first call of TimerFcn.
-    tid; // ID number of the timer/thread.
+    timerID; // ID number of the timer/thread.
 
     void *(*StartFcn)(void *); // Function to be executed during the initialization of the timer.
     void *(*StopFcn)(void *); // Function to be executed before the timer is destroyed.
@@ -69,7 +69,7 @@ typedef struct {
 queue *fifo; // The queue instance
 int areProducersActive; // Flag whether there is at least one producer thread active
 FILE *consumer_stats_file;
-int countFull, countEmpty, indexProducerTimes, indexConsumerTimes, functionSelection;
+int countFull, countEmpty, indexProducerTimes, indexConsumerTimes, functionSelection, timerID;
 long int producer_times[LOOP], consumer_times[LOOP];
 char tick[] = "Tick!\n";
 
@@ -103,6 +103,7 @@ int main() {
     countFull = 0;
     indexProducerTimes = 0;
     indexConsumerTimes = 0;
+    timerID=0;
 
     // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
@@ -179,7 +180,9 @@ int main() {
 }
 
 void timerInit(timer *t) {
-    pthread_create(&pro[0], NULL, producer, t); // Create the Producer thread
+    t->timerID=timerID;
+    pthread_create(&pro[t->timerID], NULL, producer, t); // Create the Producer thread
+    timerID++;
 }
 
 void start(timer *t) {
@@ -227,12 +230,14 @@ void *producer(void *t) {
     timer *t_casted = (timer *) t;
     struct timeval now, before, res;
 
-    printf("Producer %d started.\n", t_casted->tid);
+    // Wait for the StartDelay to pass
+    printf("Producer %d started.\n", t_casted->timerID);
     usleep(t_casted->StartDelay * 1000000);
     gettimeofday(&before, NULL);
 
     for (i = 0; i < t_casted->TasksToExecute; i++) {
         usleep(t_casted->Period * 1000);
+
         // Create thw workFunction object.
         workFunction *wF = (workFunction *) malloc(sizeof(workFunction)); // workFunction to add malloc
         functionArgument *fArg = (functionArgument *) malloc(sizeof(functionArgument));
@@ -244,14 +249,14 @@ void *producer(void *t) {
         // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
         while (fifo->full) { // When lock is acquired check if queue is full
-            //printf("producer %d: queue FULL.\n", (int) tid);
+            //printf("producer %d: queue FULL.\n", (int) t_casted->timerID);
             countFull++;
             pthread_cond_wait(fifo->notFull, fifo->mut); // Conditional wait until queue is full NO MORE
         }
-        gettimeofday((fArg->tv), NULL);
+        gettimeofday((fArg->tv), NULL); // Time to be passed to the consumer, for calculating duration of stay in queue
         queueAdd(fifo, wF);
-        gettimeofday(&now, NULL);
-        timersub(&now, &before, &res);
+        gettimeofday(&now, NULL); // Time for queue-insertion period calculation
+        timersub(&now, &before, &res); // Calculate time beteween queue-insertions
         before = now;
         printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
         pthread_mutex_unlock(fifo->mut);
@@ -259,13 +264,14 @@ void *producer(void *t) {
         //pthread_cond_broadcast(fifo->notEmpty);
     }
 
+    // Terminate consumers TODO change for multiple producers
     pthread_mutex_lock(fifo->mut);
     areProducersActive = 0;
     pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
     printf("BROADCAST for possible conditional waiting consumers!!!\n");
     pthread_mutex_unlock(fifo->mut);
 
-    printf("producer %d: RETURNED.\n", (int) t_casted->tid); // Prints the ID the timer
+    printf("producer %d: RETURNED.\n", (int) t_casted->timerID); // Prints the ID the timer
     return (NULL);
 }
 
