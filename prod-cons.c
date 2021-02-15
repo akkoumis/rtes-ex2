@@ -23,10 +23,10 @@
 #include <math.h>
 
 #define QUEUESIZE 15
-#define LOOP 100000
-#define pNum 1
-#define qNum 128
-#define functionsNum 2
+#define LOOP 360000
+#define pNum 1 // Number of PRODUCER threads
+#define qNum 8 // Number of CONSUMER threads
+#define functionsNum 2 // Size of the FUNCTION POOL
 
 void *producer(void *timer);
 
@@ -66,11 +66,12 @@ typedef struct {
     void *UserData;
 } timer;
 
-queue *fifo; // The queue
+queue *fifo; // The queue instance
 int areProducersActive; // Flag whether there is at least one producer thread active
-FILE *fp;
-int countFull, countEmpty, indexTimes, functionSelection;
-long int times[LOOP];
+FILE *consumer_stats_file;
+int countFull, countEmpty, indexProducerTimes, indexConsumerTimes, functionSelection;
+long int producer_times[LOOP], consumer_times[LOOP];
+char tick[] = "Tick!\n";
 
 void (*functions[functionsNum])(int);
 
@@ -92,17 +93,24 @@ void start(timer *t);
 
 void startat(timer *t, int y, int m, int d, int h, int min, int sec);
 
+void print_message(void *str);
+
 pthread_t pro[pNum], con[qNum]; // Producer and Consumer threads
 
 int main() {
+    // Initialize counters
     countEmpty = 0;
     countFull = 0;
-    indexTimes = 0;
+    indexProducerTimes = 0;
+    indexConsumerTimes = 0;
+
+    // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
     functions[1] = &consumerCalculate;
     functionSelection = 2; // 0 - print, 1 - cos calculation, 2 - both randomly
 
-    fifo = queueInit(); // Initialize the queue, using the function
+    // Initialize the queue, using the provided function
+    fifo = queueInit();
     if (fifo == NULL) {
         fprintf(stderr, "main: Queue Init failed.\n");
         exit(1);
@@ -114,46 +122,56 @@ int main() {
     char buffer[25], name[100];
     struct tm *info = localtime(&timestamp);
     strftime(buffer, 25, "%Y_%m_%d_%H_%M_%S", info);
-    sprintf(name, "stats/%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
+    sprintf(name, "stats/cons_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
             functionSelection);
     //printf("timestamp: %s\n", name);
-    fp = fopen(name, "w+");
-    if (fp == NULL) {
-        fprintf(stderr, "main: File Open failed.\n");
+    consumer_stats_file = fopen(name, "w+");
+    if (consumer_stats_file == NULL) {
+        fprintf(stderr, "main: File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
         exit(2);
     }
 
     // Thread Creation
-//    for (int tid = 0; tid < pNum; ++tid) {
-//        pthread_create(&pro[tid], NULL, producer, tid); // Create the Producer thread
-//    }
+    //for (int tid = 0; tid < pNum; ++tid) {
+    //    pthread_create(&pro[tid], NULL, producer, tid); // Create the Producer thread
+    //}
     areProducersActive = 1;
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_create(&con[tid], NULL, consumer, tid); // Create the Consumer thread
     }
 
     // TODO Create Timers
+    timer timer1;
+    timer1.Period = 1000;
+    timer1.TasksToExecute = 10;
+    timer1.TimerFcn = &print_message;
+    timer1.UserData = &tick;
+    start(&timer1);
+
+
 
     // Thread Join
-    for (int tid = 0; tid < pNum; ++tid) {
-        pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
-    }
-    pthread_mutex_lock(fifo->mut);
-    areProducersActive = 0;
-    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
-    printf("BROADCAST for possible conditional waiting consumers!!!\n");
-    pthread_mutex_unlock(fifo->mut);
+//    for (int tid = 0; tid < pNum; ++tid) {
+//        pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
+//    }
+//    pthread_mutex_lock(fifo->mut);
+//    areProducersActive = 0;
+//    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
+//    printf("BROADCAST for possible conditional waiting consumers!!!\n");
+//    pthread_mutex_unlock(fifo->mut);
+
+    // Thread Destruction
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_join(con[tid], NULL); // Join  the Consumer thread to main thread and wait for its completion
     }
     queueDelete(fifo);
 
-    for (int i = 0; i < indexTimes; ++i) {
-        fprintf(fp, "%ld\n", times[i]);
+    for (int i = 0; i < indexConsumerTimes; ++i) {
+        fprintf(consumer_stats_file, "%ld\n", consumer_times[i]);
     }
     printf("\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
-    fprintf(fp, "\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
-    fclose(fp);
+    fprintf(consumer_stats_file, "\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
+    fclose(consumer_stats_file);
 
     printf("\n28/9/20 15:36\n");
 
@@ -171,7 +189,7 @@ void start(timer *t) {
 }
 
 void startat(timer *t, int y, int m, int d, int h, int min, int sec) {
-    // TODO Calculate the time until initialization and add info to StartDelay of timer t
+    // Calculate the time until initialization and add info to StartDelay of timer t
     time_t now_t, future_t;
     struct tm future_tm;
     double differnce_in_seconds;
@@ -197,28 +215,33 @@ void startat(timer *t, int y, int m, int d, int h, int min, int sec) {
         return;
     }
 //    printf("Difference in seconds = %f\n", differnce_in_seconds);
-    t->StartDelay = (int) differnce_in_seconds;
 
     // Initialize the timer
-    //timerInit(t);
+    t->StartDelay = (int) differnce_in_seconds;
+    timerInit(t);
 }
 
 void *producer(void *t) {
     //queue *fifo;
     int i;
     timer *t_casted = (timer *) t;
+    struct timeval now, before, res;
 
-    //fifo = (queue *) q;
-    for (i = 0; i < LOOP; i++) {
+    printf("Producer %d started.\n", t_casted->tid);
+    usleep(t_casted->StartDelay * 1000000);
+    gettimeofday(&before, NULL);
+
+    for (i = 0; i < t_casted->TasksToExecute; i++) {
+        usleep(t_casted->Period * 1000);
+        // Create thw workFunction object.
         workFunction *wF = (workFunction *) malloc(sizeof(workFunction)); // workFunction to add malloc
         functionArgument *fArg = (functionArgument *) malloc(sizeof(functionArgument));
         fArg->tv = (struct timeval *) malloc(sizeof(struct timeval));
-        fArg->args = i;
+        fArg->args = t_casted->UserData; // Data necessary for the function.
         wF->arg = fArg;
-        if (functionSelection < functionsNum)
-            wF->work = functions[functionSelection];
-        else
-            wF->work = functions[i % functionsNum];
+        wF->work = t_casted->TimerFcn;
+
+        // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
         while (fifo->full) { // When lock is acquired check if queue is full
             //printf("producer %d: queue FULL.\n", (int) tid);
@@ -227,12 +250,20 @@ void *producer(void *t) {
         }
         gettimeofday((fArg->tv), NULL);
         queueAdd(fifo, wF);
-        //printf("++\n");
+        gettimeofday(&now, NULL);
+        timersub(&now, &before, &res);
+        before = now;
+        printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notEmpty);
         //pthread_cond_broadcast(fifo->notEmpty);
-        //usleep(100000);
     }
+
+    pthread_mutex_lock(fifo->mut);
+    areProducersActive = 0;
+    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
+    printf("BROADCAST for possible conditional waiting consumers!!!\n");
+    pthread_mutex_unlock(fifo->mut);
 
     printf("producer %d: RETURNED.\n", (int) t_casted->tid); // Prints the ID the timer
     return (NULL);
@@ -251,10 +282,10 @@ void *consumer(void *tid) {
         while (fifo->empty) {
             if (areProducersActive == 0) {
                 pthread_mutex_unlock(fifo->mut);
-                printf("consumer %wF: RETURNED.\n", (int) tid);
+                printf("consumer %d: RETURNED.\n", (int) tid);
                 return (NULL);
             }
-            //printf("consumer %wF: queue EMPTY.\n", (int) tid);
+            //printf("consumer %d: queue EMPTY.\n", (int) tid);
             countEmpty++;
             pthread_cond_wait(fifo->notEmpty, fifo->mut);
 
@@ -262,22 +293,24 @@ void *consumer(void *tid) {
         gettimeofday(&now, NULL);
         queueDel(fifo, &wF);
         timersub(&now, ((functionArgument *) (wF->arg))->tv, &res);
-        //fprintf(fp, "%ld\n", res.tv_sec * 1000000 + res.tv_usec);
+        //fprintf(consumer_stats_file, "%ld\n", res.tv_sec * 1000000 + res.tv_usec);
         //printf("%ld\n", res.tv_sec * 1000000 + res.tv_usec);
-        times[indexTimes] = res.tv_sec * 1000000 + res.tv_usec;
-        indexTimes++;
+        consumer_times[indexConsumerTimes] = res.tv_sec * 1000000 + res.tv_usec;
+        indexConsumerTimes++;
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notFull);
         //pthread_cond_broadcast(fifo->notFull);
-        //printf("consumer %wF: recieved %wF, after %ld.\n", (int) tid, wF->arg, res.tv_sec * 1000000 + res.tv_usec);
-        //printf("consumer %wF:", (int) tid);
+        printf("consumer %d: recieved %d, after %ld useconds.\n", (int) tid, wF->arg,
+               res.tv_sec * 1000000 + res.tv_usec);
+        //printf("consumer %d:", (int) tid);
         functionArgument *fATemp = wF->arg;
-        (*(wF->work))(fATemp->args); // Execute function
-        //printf(" after %wF.\n", res.tv_sec * 1000000 + res.tv_usec);
+        // Execute function
+        (*(wF->work))(fATemp->args);
+        //printf(" after %d.\n", res.tv_sec * 1000000 + res.tv_usec);
         free(((functionArgument *) (wF->arg))->tv);
         free(wF->arg);
         free(wF); // workFunction to delete free
-//usleep(200000);
+        //usleep(200000);
     }
 
     //return (NULL);
@@ -366,4 +399,8 @@ void consumerCalculate(int a) {
     }
     //printf("cosin %d\n", a);
     //printf("cosin %d\t%lf\t%lf\n", a, cos(a), cos(2*a));
+}
+
+void print_message(void *str) {
+    printf("%s\n", str);
 }
