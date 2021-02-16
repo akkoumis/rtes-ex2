@@ -24,7 +24,7 @@
 
 #define QUEUESIZE 15
 #define LOOP 360000
-#define pNum 1 // Number of PRODUCER threads
+#define pNum 3 // Number of PRODUCER threads
 #define qNum 8 // Number of CONSUMER threads
 #define functionsNum 2 // Size of the FUNCTION POOL
 
@@ -68,10 +68,12 @@ typedef struct {
 
 queue *fifo; // The queue instance
 int areProducersActive; // Flag whether there is at least one producer thread active
-FILE *consumer_stats_file, *producer_stats_file;
-int countFull, countEmpty, indexProducerTimes, indexConsumerTimes, functionSelection, timerID;
-long int producer_times[LOOP], consumer_times[LOOP];
-char tick[] = "Tick!\n";
+FILE *consumer_stats_file, *producer_stats_file[pNum];
+int countFull, countEmpty, indexProducerTimes[pNum], indexConsumerTimes, functionSelection, timersCounter;
+long int producer_times[pNum][LOOP], consumer_times[LOOP];
+int timer_max_loop[]={360000,36000,3600};
+char tick0[] = "Tick0!\n";
+char tick2[] = "Tick2!\n";
 
 void (*functions[functionsNum])(int);
 
@@ -101,9 +103,11 @@ int main() {
     // Initialize counters
     countEmpty = 0;
     countFull = 0;
-    indexProducerTimes = 0;
+    for (int tid = 0; tid < pNum; ++tid) {
+        indexProducerTimes[tid] = 0;
+    }
     indexConsumerTimes = 0;
-    timerID = 0;
+    timersCounter = 0;
 
     // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
@@ -134,15 +138,22 @@ int main() {
         exit(2);
     }
     // Producer file
-    sprintf(name, "stats/prod_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
-            functionSelection);
-    //printf("timestamp: %s\n", name);
-    producer_stats_file = fopen(name, "w+");
-    if (producer_stats_file == NULL) {
-        fprintf(stderr,
-                "main: Producer File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
-        exit(2);
+    for (int tid = 0; tid < pNum; ++tid) {
+        sprintf(name, "stats/prod_%d_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", tid, buffer, pNum, qNum, LOOP,
+                QUEUESIZE,
+                functionSelection);
+        //printf("timestamp: %s\n", name);
+        producer_stats_file[tid] = fopen(name, "w+");
+        if (producer_stats_file == NULL) {
+            fprintf(stderr,
+                    "main: Producer File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
+            exit(2);
+        }
     }
+
+
+
+    // TODO Create Timers
 
     // Thread Creation
     //for (int tid = 0; tid < pNum; ++tid) {
@@ -152,15 +163,26 @@ int main() {
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_create(&con[tid], NULL, consumer, tid); // Create the Consumer thread
     }
+    timer timer0;
+    timer0.Period = 10;
+    timer0.TasksToExecute = 1000;
+    timer0.TimerFcn = &print_message;
+    timer0.UserData = &tick0;
+    start(&timer0);
 
-    // TODO Create Timers
     timer timer1;
-    timer1.Period = 1000;
-    timer1.TasksToExecute = 10;
+    timer1.Period = 100;
+    timer1.TasksToExecute = 100;
     timer1.TimerFcn = &print_message;
-    timer1.UserData = &tick;
+    timer1.UserData = &tick0;
     start(&timer1);
 
+    timer timer2;
+    timer2.Period = 1000;
+    timer2.TasksToExecute = 10;
+    timer2.TimerFcn = &print_message;
+    timer2.UserData = &tick2;
+    start(&timer2);
 
 
     // Thread Join
@@ -174,7 +196,7 @@ int main() {
     //pthread_mutex_unlock(fifo->mut);
 
     // Thread Join
-    for (int tid = 0; tid < timerID; ++tid) {
+    for (int tid = 0; tid < timersCounter; ++tid) {
         pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
     }
     pthread_mutex_lock(fifo->mut);
@@ -193,14 +215,18 @@ int main() {
         fprintf(consumer_stats_file, "%ld\n", consumer_times[i]);
     }
     // Print PRODUCER times
-    for (int i = 0; i < indexProducerTimes; ++i) {
-        fprintf(producer_stats_file, "%ld\n", producer_times[i]);
+    for (int tid = 0; tid < timersCounter; ++tid) {
+        for (int i = 0; i < indexProducerTimes[tid]; ++i) {
+            fprintf(producer_stats_file[tid], "%ld\n", producer_times[tid][i]);
+        }
     }
 
     printf("\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
     fprintf(consumer_stats_file, "\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
     fclose(consumer_stats_file);
-    fclose(producer_stats_file);
+    for (int tid = 0; tid < timersCounter; ++tid) {
+        fclose(producer_stats_file[tid]);
+    }
 
     printf("\n28/9/20 15:36\n");
 
@@ -208,9 +234,12 @@ int main() {
 }
 
 void timerInit(timer *t) {
-    t->timerID = timerID;
+    pthread_mutex_lock(fifo->mut);
+    t->timerID = timersCounter;
     pthread_create(&pro[t->timerID], NULL, producer, t); // Create the Producer thread
-    timerID++;
+    timersCounter++;
+    countEmpty=0;
+    pthread_mutex_unlock(fifo->mut);
 }
 
 void start(timer *t) {
@@ -277,7 +306,7 @@ void *producer(void *t) {
         // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
         while (fifo->full) { // When lock is acquired check if queue is full
-            //printf("producer %d: queue FULL.\n", (int) t_casted->timerID);
+            //printf("producer %d: queue FULL.\n", (int) t_casted->tid);
             countFull++;
             pthread_cond_wait(fifo->notFull, fifo->mut); // Conditional wait until queue is full NO MORE
         }
@@ -289,8 +318,8 @@ void *producer(void *t) {
         printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
 
         // Update producer_times with the amount of time since last queue-insertion
-        producer_times[indexProducerTimes] = res.tv_sec * 1000000 + res.tv_usec;
-        indexProducerTimes++;
+        producer_times[t_casted->timerID][indexProducerTimes[t_casted->timerID]] = res.tv_sec * 1000000 + res.tv_usec;
+        indexProducerTimes[t_casted->timerID]++;
 
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notEmpty);
