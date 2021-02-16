@@ -173,7 +173,15 @@ int main() {
     //printf("BROADCAST for possible conditional waiting consumers!!!\n");
     //pthread_mutex_unlock(fifo->mut);
 
-    // Thread Destruction
+    // Thread Join
+    for (int tid = 0; tid < timerID; ++tid) {
+        pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
+    }
+    pthread_mutex_lock(fifo->mut);
+    areProducersActive = 0;
+    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
+    printf("BROADCAST for possible conditional waiting consumers!!!\n");
+    pthread_mutex_unlock(fifo->mut);
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_join(con[tid], NULL); // Join  the Consumer thread to main thread and wait for its completion
     }
@@ -184,7 +192,7 @@ int main() {
     for (int i = 0; i < indexConsumerTimes; ++i) {
         fprintf(consumer_stats_file, "%ld\n", consumer_times[i]);
     }
-    // Print CONSUMER times
+    // Print PRODUCER times
     for (int i = 0; i < indexProducerTimes; ++i) {
         fprintf(producer_stats_file, "%ld\n", producer_times[i]);
     }
@@ -290,11 +298,11 @@ void *producer(void *t) {
     }
 
     // Terminate consumers TODO change for multiple producers
-    pthread_mutex_lock(fifo->mut);
-    areProducersActive = 0;
-    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
-    printf("BROADCAST for possible conditional waiting consumers!!!\n");
-    pthread_mutex_unlock(fifo->mut);
+    //pthread_mutex_lock(fifo->mut);
+    //areProducersActive = 0;
+    //pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
+    //printf("BROADCAST for possible conditional waiting consumers!!!\n");
+    //pthread_mutex_unlock(fifo->mut);
 
     printf("producer %d: RETURNED.\n", (int) t_casted->timerID); // Prints the ID the timer
     return (NULL);
