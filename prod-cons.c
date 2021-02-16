@@ -68,7 +68,7 @@ typedef struct {
 
 queue *fifo; // The queue instance
 int areProducersActive; // Flag whether there is at least one producer thread active
-FILE *consumer_stats_file;
+FILE *consumer_stats_file, *producer_stats_file;
 int countFull, countEmpty, indexProducerTimes, indexConsumerTimes, functionSelection, timerID;
 long int producer_times[LOOP], consumer_times[LOOP];
 char tick[] = "Tick!\n";
@@ -103,7 +103,7 @@ int main() {
     countFull = 0;
     indexProducerTimes = 0;
     indexConsumerTimes = 0;
-    timerID=0;
+    timerID = 0;
 
     // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
@@ -123,12 +123,24 @@ int main() {
     char buffer[25], name[100];
     struct tm *info = localtime(&timestamp);
     strftime(buffer, 25, "%Y_%m_%d_%H_%M_%S", info);
+    // Consumer file
     sprintf(name, "stats/cons_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
             functionSelection);
     //printf("timestamp: %s\n", name);
     consumer_stats_file = fopen(name, "w+");
     if (consumer_stats_file == NULL) {
-        fprintf(stderr, "main: File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
+        fprintf(stderr,
+                "main: Consumer File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
+        exit(2);
+    }
+    // Producer file
+    sprintf(name, "stats/prod_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
+            functionSelection);
+    //printf("timestamp: %s\n", name);
+    producer_stats_file = fopen(name, "w+");
+    if (producer_stats_file == NULL) {
+        fprintf(stderr,
+                "main: Producer File Open failed. Make sure there is a \"stats\" directory where the executable is.\n");
         exit(2);
     }
 
@@ -152,14 +164,14 @@ int main() {
 
 
     // Thread Join
-//    for (int tid = 0; tid < pNum; ++tid) {
-//        pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
-//    }
-//    pthread_mutex_lock(fifo->mut);
-//    areProducersActive = 0;
-//    pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
-//    printf("BROADCAST for possible conditional waiting consumers!!!\n");
-//    pthread_mutex_unlock(fifo->mut);
+    //for (int tid = 0; tid < pNum; ++tid) {
+    //    pthread_join(pro[tid], NULL); // Join  the Producer thread to main thread and wait for its completion
+    //}
+    //pthread_mutex_lock(fifo->mut);
+    //areProducersActive = 0;
+    //pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
+    //printf("BROADCAST for possible conditional waiting consumers!!!\n");
+    //pthread_mutex_unlock(fifo->mut);
 
     // Thread Destruction
     for (int tid = 0; tid < qNum; ++tid) {
@@ -167,12 +179,20 @@ int main() {
     }
     queueDelete(fifo);
 
+
+    // Print CONSUMER times
     for (int i = 0; i < indexConsumerTimes; ++i) {
         fprintf(consumer_stats_file, "%ld\n", consumer_times[i]);
     }
+    // Print CONSUMER times
+    for (int i = 0; i < indexProducerTimes; ++i) {
+        fprintf(producer_stats_file, "%ld\n", producer_times[i]);
+    }
+
     printf("\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
     fprintf(consumer_stats_file, "\n\ncountEmpty = %d\tcountFull = %d\n", countEmpty, countFull);
     fclose(consumer_stats_file);
+    fclose(producer_stats_file);
 
     printf("\n28/9/20 15:36\n");
 
@@ -180,7 +200,7 @@ int main() {
 }
 
 void timerInit(timer *t) {
-    t->timerID=timerID;
+    t->timerID = timerID;
     pthread_create(&pro[t->timerID], NULL, producer, t); // Create the Producer thread
     timerID++;
 }
@@ -259,6 +279,11 @@ void *producer(void *t) {
         timersub(&now, &before, &res); // Calculate time beteween queue-insertions
         before = now;
         printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
+
+        // Update producer_times with the amount of time since last queue-insertion
+        producer_times[indexProducerTimes] = res.tv_sec * 1000000 + res.tv_usec;
+        indexProducerTimes++;
+
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notEmpty);
         //pthread_cond_broadcast(fifo->notEmpty);
@@ -283,6 +308,8 @@ void *consumer(void *tid) {
     //fifo = (queue *) q;
     while (1) {
         //for (i = 0; i < LOOP; i++) {
+
+        // Remove work from queue
         struct timeval now, res;
         pthread_mutex_lock(fifo->mut); // Try to get the mutex lock.
         while (fifo->empty) {
@@ -301,15 +328,18 @@ void *consumer(void *tid) {
         timersub(&now, ((functionArgument *) (wF->arg))->tv, &res);
         //fprintf(consumer_stats_file, "%ld\n", res.tv_sec * 1000000 + res.tv_usec);
         //printf("%ld\n", res.tv_sec * 1000000 + res.tv_usec);
+
+        // Update consumer_times with the amount of time the work stayed in the queue
         consumer_times[indexConsumerTimes] = res.tv_sec * 1000000 + res.tv_usec;
         indexConsumerTimes++;
-        pthread_mutex_unlock(fifo->mut);
+        pthread_mutex_unlock(fifo->mut); // Unlock mutex
         pthread_cond_signal(fifo->notFull);
         //pthread_cond_broadcast(fifo->notFull);
         printf("consumer %d: recieved %d, after %ld useconds.\n", (int) tid, wF->arg,
                res.tv_sec * 1000000 + res.tv_usec);
         //printf("consumer %d:", (int) tid);
         functionArgument *fATemp = wF->arg;
+
         // Execute function
         (*(wF->work))(fATemp->args);
         //printf(" after %d.\n", res.tv_sec * 1000000 + res.tv_usec);
@@ -322,15 +352,6 @@ void *consumer(void *tid) {
     //return (NULL);
 }
 
-/*
-  typedef struct {
-  int buf[QUEUESIZE];
-  long head, tail;
-  int full, empty;
-  pthread_mutex_t *mut;
-  pthread_cond_t *notFull, *notEmpty;
-  } queue;
-*/
 
 queue *queueInit(void) {
     queue *q;
