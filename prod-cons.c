@@ -277,7 +277,7 @@ void startat(timer *t, int y, int m, int d, int h, int min, int sec) {
 //    printf("Difference in seconds = %f\n", differnce_in_seconds);
 
     // Initialize the timer
-    t->StartDelay = (int) differnce_in_seconds;
+    t->StartDelay += (int) differnce_in_seconds;
     timerInit(t);
 }
 
