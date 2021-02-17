@@ -301,7 +301,7 @@ void startat(timer *t, int y, int m, int d, int h, int min, int sec) {
 
 void *producer(void *t) {
     //queue *fifo;
-    int i;
+    int i, drift_difference = 0;
     timer *timer_casted = (timer *) t;
     struct timeval now, before, res;
     char tempString[100];
@@ -354,6 +354,9 @@ void *producer(void *t) {
             producer_times[timer_casted->timerID][indexProducerTimes[timer_casted->timerID]] =
                     res.tv_sec * 1000000 + res.tv_usec;
             indexProducerTimes[timer_casted->timerID]++;
+
+            // Drift Correction
+           drift_difference = (res.tv_sec * 1000000 + res.tv_usec) - (timer_casted->Period * 1000);
         }
         before = now;
         //printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
@@ -366,7 +369,7 @@ void *producer(void *t) {
             break;
 
         // Sleep for a time specified in Period
-        usleep(timer_casted->Period * 1000);
+        usleep((timer_casted->Period * 1000) - drift_difference);
     }
 
     //Execute StartFcn
