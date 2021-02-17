@@ -97,6 +97,10 @@ void startat(timer *t, int y, int m, int d, int h, int min, int sec);
 
 void print_message(void *str);
 
+void sampleStartFCN(int a);
+
+void sampleStopFCN(int a);
+
 pthread_t pro[pNum], con[qNum]; // Producer and Consumer threads
 
 int main() {
@@ -167,8 +171,8 @@ int main() {
     timer0.Period = 10;
     timer0.TasksToExecute = 1000;
     timer0.StartDelay = 0;
-    timer0.StartFcn = &print_message;
-    timer0.StopFcn = &print_message;
+    timer0.StartFcn = &sampleStartFCN;
+    timer0.StopFcn = &sampleStopFCN;
     timer0.TimerFcn = &consumerCalculate;
     timer0.ErrorFcn = &print_message;
     timer0.UserData = 10;
@@ -178,8 +182,8 @@ int main() {
     timer1.Period = 100;
     timer1.TasksToExecute = 100;
     timer1.StartDelay = 0;
-    timer1.StartFcn = &print_message;
-    timer1.StopFcn = &print_message;
+    timer1.StartFcn = &sampleStartFCN;
+    timer1.StopFcn = &sampleStopFCN;
     timer1.TimerFcn = &consumerCalculate;
     timer1.ErrorFcn = &print_message;
     timer1.UserData = 20;
@@ -189,8 +193,8 @@ int main() {
     timer2.Period = 1000;
     timer2.TasksToExecute = 10;
     timer2.StartDelay = 0;
-    timer2.StartFcn = &print_message;
-    timer2.StopFcn = &print_message;
+    timer2.StartFcn = &sampleStartFCN;
+    timer2.StopFcn = &sampleStopFCN;
     timer2.TimerFcn = &consumerCalculate;
     timer2.ErrorFcn = &print_message;
     timer2.UserData = 30;
@@ -298,14 +302,17 @@ void *producer(void *t) {
     int i;
     timer *timer_casted = (timer *) t;
     struct timeval now, before, res;
+    char tempString[100];
 
-    //Add StartFcn
+    //Execute StartFcn
+    (*(timer_casted->StartFcn))(timer_casted->UserData);
 
     // Wait for the StartDelay to pass
     printf("Producer %d started.\n", timer_casted->timerID);
     usleep(timer_casted->StartDelay * 1000000);
     //gettimeofday(&before, NULL);
     before=(struct timeval) {0};
+
 
     for (i = 0; i < timer_casted->TasksToExecute; i++) {
 
@@ -319,6 +326,7 @@ void *producer(void *t) {
 
         // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
+        // TODO Refactor for ErrorFcn when queue is full
         while (fifo->full) { // When lock is acquired check if queue is full
             //printf("producer %d: queue FULL.\n", (int) timer_casted->tid);
             countFull++;
@@ -334,22 +342,21 @@ void *producer(void *t) {
             indexProducerTimes[timer_casted->timerID]++;
         }
         before = now;
-        printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
+        //printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
 
         pthread_mutex_unlock(fifo->mut);
         pthread_cond_signal(fifo->notEmpty);
         //pthread_cond_broadcast(fifo->notEmpty);
 
+        if (i==timer_casted->TasksToExecute-1)
+            break;
+
         // Sleep for a time specified in Period
         usleep(timer_casted->Period * 1000);
     }
 
-    // Terminate consumers
-    //pthread_mutex_lock(fifo->mut);
-    //areProducersActive = 0;
-    //pthread_cond_broadcast(fifo->notEmpty); // In case any of the consumers is condition waiting
-    //printf("BROADCAST for possible conditional waiting consumers!!!\n");
-    //pthread_mutex_unlock(fifo->mut);
+    //Execute StartFcn
+    (*(timer_casted->StopFcn))(timer_casted->UserData);
 
     printf("producer %d: RETURNED.\n", (int) timer_casted->timerID); // Prints the ID the timer
     return (NULL);
@@ -390,8 +397,8 @@ void *consumer(void *tid) {
         pthread_mutex_unlock(fifo->mut); // Unlock mutex
         pthread_cond_signal(fifo->notFull);
         //pthread_cond_broadcast(fifo->notFull);
-        printf("consumer %d: recieved %d, after %ld useconds.\n", (int) tid, wF->arg,
-               res.tv_sec * 1000000 + res.tv_usec);
+        //printf("consumer %d: recieved %d, after %ld useconds.\n", (int) tid, wF->arg,res.tv_sec * 1000000 + res.tv_usec);
+
         //printf("consumer %d:", (int) tid);
         functionArgument *fATemp = wF->arg;
 
@@ -485,4 +492,12 @@ void consumerCalculate(int a) {
 
 void print_message(void *str) {
     printf("%s\n", str);
+}
+
+void sampleStartFCN(int a){
+    printf("StartFcn in Producer with User Data = %d\n", a);
+}
+
+void sampleStopFCN(int a){
+    printf("StopFcn in Producer with User Data = %d\n", a);
 }
