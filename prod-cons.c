@@ -166,21 +166,33 @@ int main() {
     timer timer0;
     timer0.Period = 10;
     timer0.TasksToExecute = 1000;
+    timer0.StartDelay = 0;
+    timer0.StartFcn = &print_message;
+    timer0.StopFcn = &print_message;
     timer0.TimerFcn = &consumerCalculate;
+    timer0.ErrorFcn = &print_message;
     timer0.UserData = 10;
     start(&timer0);
 
     timer timer1;
     timer1.Period = 100;
     timer1.TasksToExecute = 100;
+    timer1.StartDelay = 0;
+    timer1.StartFcn = &print_message;
+    timer1.StopFcn = &print_message;
     timer1.TimerFcn = &consumerCalculate;
+    timer1.ErrorFcn = &print_message;
     timer1.UserData = 20;
     start(&timer1);
 
     timer timer2;
     timer2.Period = 1000;
     timer2.TasksToExecute = 10;
+    timer2.StartDelay = 0;
+    timer2.StartFcn = &print_message;
+    timer2.StopFcn = &print_message;
     timer2.TimerFcn = &consumerCalculate;
+    timer2.ErrorFcn = &print_message;
     timer2.UserData = 30;
     start(&timer2);
 
