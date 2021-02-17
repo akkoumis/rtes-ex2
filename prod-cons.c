@@ -71,7 +71,7 @@ int areProducersActive; // Flag whether there is at least one producer thread ac
 FILE *consumer_stats_file, *producer_stats_file[pNum];
 int countFull, countEmpty, indexProducerTimes[pNum], indexConsumerTimes, functionSelection, timersCounter;
 long int producer_times[pNum][LOOP], consumer_times[LOOP];
-int timer_max_loop[]={360000,36000,3600};
+int timer_max_loop[] = {360000, 36000, 3600};
 char tick0[] = "Tick0!\n";
 char tick2[] = "Tick2!\n";
 
@@ -100,6 +100,8 @@ void print_message(void *str);
 void sampleStartFCN(int a);
 
 void sampleStopFCN(int a);
+
+void sampleErrorFCN(int a);
 
 pthread_t pro[pNum], con[qNum]; // Producer and Consumer threads
 
@@ -174,7 +176,7 @@ int main() {
     timer0.StartFcn = &sampleStartFCN;
     timer0.StopFcn = &sampleStopFCN;
     timer0.TimerFcn = &consumerCalculate;
-    timer0.ErrorFcn = &print_message;
+    timer0.ErrorFcn = &sampleErrorFCN;
     timer0.UserData = 10;
     start(&timer0);
 
@@ -185,7 +187,7 @@ int main() {
     timer1.StartFcn = &sampleStartFCN;
     timer1.StopFcn = &sampleStopFCN;
     timer1.TimerFcn = &consumerCalculate;
-    timer1.ErrorFcn = &print_message;
+    timer1.ErrorFcn = &sampleErrorFCN;
     timer1.UserData = 20;
     start(&timer1);
 
@@ -196,7 +198,7 @@ int main() {
     timer2.StartFcn = &sampleStartFCN;
     timer2.StopFcn = &sampleStopFCN;
     timer2.TimerFcn = &consumerCalculate;
-    timer2.ErrorFcn = &print_message;
+    timer2.ErrorFcn = &sampleErrorFCN;
     timer2.UserData = 30;
     start(&timer2);
 
@@ -254,7 +256,7 @@ void timerInit(timer *t) {
     t->timerID = timersCounter;
     pthread_create(&pro[t->timerID], NULL, producer, t); // Create the Producer thread
     timersCounter++;
-    countEmpty=0;
+    countEmpty = 0;
     pthread_mutex_unlock(fifo->mut);
 }
 
@@ -311,7 +313,7 @@ void *producer(void *t) {
     printf("Producer %d started.\n", timer_casted->timerID);
     usleep(timer_casted->StartDelay * 1000000);
     //gettimeofday(&before, NULL);
-    before=(struct timeval) {0};
+    before = (struct timeval) {0};
 
 
     for (i = 0; i < timer_casted->TasksToExecute; i++) {
@@ -327,18 +329,30 @@ void *producer(void *t) {
         // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
         // TODO Refactor for ErrorFcn when queue is full
-        while (fifo->full) { // When lock is acquired check if queue is full
+        if (fifo->full) { // When lock is acquired check if queue is full
             //printf("producer %d: queue FULL.\n", (int) timer_casted->tid);
             countFull++;
-            pthread_cond_wait(fifo->notFull, fifo->mut); // Conditional wait until queue is full NO MORE
+            //pthread_cond_wait(fifo->notFull, fifo->mut); // Conditional wait until queue is full NO MORE
+
+            // Free pointers of unused wF because ti wont be added to queue
+            free(((functionArgument *) (wF->arg))->tv);
+            free(wF->arg);
+            free(wF); // workFunction to delete free
+
+            // Execute ErrorFcn
+            (*(timer_casted->ErrorFcn))(timer_casted->UserData);
+        } else {
+            gettimeofday((fArg->tv),
+                         NULL); // Time to be passed to the consumer, for calculating duration of stay in queue
+            queueAdd(fifo, wF);
         }
-        gettimeofday((fArg->tv), NULL); // Time to be passed to the consumer, for calculating duration of stay in queue
-        queueAdd(fifo, wF);
+
         gettimeofday(&now, NULL); // Time for queue-insertion period calculation
-        if (before.tv_sec!=0){
+        if (before.tv_sec != 0) {
             timersub(&now, &before, &res); // Calculate time beteween queue-insertions
             // Update producer_times with the amount of time since last queue-insertion
-            producer_times[timer_casted->timerID][indexProducerTimes[timer_casted->timerID]] = res.tv_sec * 1000000 + res.tv_usec;
+            producer_times[timer_casted->timerID][indexProducerTimes[timer_casted->timerID]] =
+                    res.tv_sec * 1000000 + res.tv_usec;
             indexProducerTimes[timer_casted->timerID]++;
         }
         before = now;
@@ -348,7 +362,7 @@ void *producer(void *t) {
         pthread_cond_signal(fifo->notEmpty);
         //pthread_cond_broadcast(fifo->notEmpty);
 
-        if (i==timer_casted->TasksToExecute-1)
+        if (i == timer_casted->TasksToExecute - 1)
             break;
 
         // Sleep for a time specified in Period
@@ -494,10 +508,14 @@ void print_message(void *str) {
     printf("%s\n", str);
 }
 
-void sampleStartFCN(int a){
+void sampleStartFCN(int a) {
     printf("StartFcn in Producer with User Data = %d\n", a);
 }
 
-void sampleStopFCN(int a){
+void sampleStopFCN(int a) {
     printf("StopFcn in Producer with User Data = %d\n", a);
+}
+
+void sampleErrorFCN(int a) {
+    printf("ErrorFcn in Producer with User Data = %d\n", a);
 }
