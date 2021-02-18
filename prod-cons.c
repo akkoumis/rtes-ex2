@@ -157,7 +157,7 @@ int main() {
         }
     }
 
-    int testDurationInSeconds = 10;
+    int testDurationInSeconds = 3600;
 
     // TODO Create Timers
 
