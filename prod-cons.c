@@ -157,7 +157,7 @@ int main() {
         }
     }
 
-
+    int testDurationInSeconds = 10;
 
     // TODO Create Timers
 
@@ -171,7 +171,7 @@ int main() {
     }
     timer timer0;
     timer0.Period = 10;
-    timer0.TasksToExecute = 1000;
+    timer0.TasksToExecute = testDurationInSeconds * 100;
     timer0.StartDelay = 0;
     timer0.StartFcn = &sampleStartFCN;
     timer0.StopFcn = &sampleStopFCN;
@@ -182,7 +182,7 @@ int main() {
 
     timer timer1;
     timer1.Period = 100;
-    timer1.TasksToExecute = 100;
+    timer1.TasksToExecute = testDurationInSeconds * 10;
     timer1.StartDelay = 0;
     timer1.StartFcn = &sampleStartFCN;
     timer1.StopFcn = &sampleStopFCN;
@@ -193,7 +193,7 @@ int main() {
 
     timer timer2;
     timer2.Period = 1000;
-    timer2.TasksToExecute = 10;
+    timer2.TasksToExecute = testDurationInSeconds;
     timer2.StartDelay = 0;
     timer2.StartFcn = &sampleStartFCN;
     timer2.StopFcn = &sampleStopFCN;
@@ -356,7 +356,7 @@ void *producer(void *t) {
             indexProducerTimes[timer_casted->timerID]++;
 
             // Drift Correction
-           drift_difference = (res.tv_sec * 1000000 + res.tv_usec) - (timer_casted->Period * 1000);
+            drift_difference = (res.tv_sec * 1000000 + res.tv_usec) - (timer_casted->Period * 1000);
         }
         before = now;
         //printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
