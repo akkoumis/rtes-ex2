@@ -159,8 +159,6 @@ int main() {
 
     int testDurationInSeconds = 3600;
 
-    // TODO Create Timers
-
     // Thread Creation
     //for (int tid = 0; tid < pNum; ++tid) {
     //    pthread_create(&pro[tid], NULL, producer, tid); // Create the Producer thread
@@ -169,6 +167,8 @@ int main() {
     for (int tid = 0; tid < qNum; ++tid) {
         pthread_create(&con[tid], NULL, consumer, tid); // Create the Consumer thread
     }
+
+    // Create Timers
     timer timer0;
     timer0.Period = 10;
     timer0.TasksToExecute = testDurationInSeconds * 100;
@@ -328,7 +328,7 @@ void *producer(void *t) {
 
         // Add work to queue.
         pthread_mutex_lock(fifo->mut); // Attempt to lock queue mutex.
-        // TODO Refactor for ErrorFcn when queue is full
+        // Execute ErrorFcn when queue is full
         if (fifo->full) { // When lock is acquired check if queue is full
             //printf("producer %d: queue FULL.\n", (int) timer_casted->tid);
             countFull++;
@@ -356,11 +356,10 @@ void *producer(void *t) {
             indexProducerTimes[timer_casted->timerID]++;
 
             // Drift Correction
-            drift_difference = (res.tv_sec * 1000000 + res.tv_usec) - (timer_casted->Period * 1000);
-            if (drift_difference > timer_casted->Period * 500)
-                drift_difference = timer_casted->Period * 500;
-            if (drift_difference < -(timer_casted->Period) * 500)
-                drift_difference = -(timer_casted->Period) * 500;
+            if ( timer_casted->Period * 1000 > 150)
+                drift_difference = 150;
+            else
+                drift_difference = timer_casted->Period * 1000;
         }
         before = now;
         //printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
