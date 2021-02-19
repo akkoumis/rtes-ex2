@@ -357,6 +357,10 @@ void *producer(void *t) {
 
             // Drift Correction
             drift_difference = (res.tv_sec * 1000000 + res.tv_usec) - (timer_casted->Period * 1000);
+            if (drift_difference > timer_casted->Period * 500)
+                drift_difference = timer_casted->Period * 500;
+            if (drift_difference < -(timer_casted->Period) * 500)
+                drift_difference = -(timer_casted->Period) * 500;
         }
         before = now;
         //printf("Job added to queue after %ld useconds.\n", res.tv_sec * 1000000 + res.tv_usec);
