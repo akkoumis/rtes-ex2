@@ -24,7 +24,7 @@
 
 #define QUEUESIZE 15
 #define LOOP 360000
-#define pNum 3 // Number of PRODUCER threads
+#define pNum 15 // Number of PRODUCER threads
 #define qNum 8 // Number of CONSUMER threads
 #define functionsNum 2 // Size of the FUNCTION POOL
 
@@ -71,9 +71,7 @@ int areProducersActive; // Flag whether there is at least one producer thread ac
 FILE *consumer_stats_file, *producer_stats_file[pNum];
 int countFull, countEmpty, indexProducerTimes[pNum], indexConsumerTimes, functionSelection, timersCounter;
 long int producer_times[pNum][LOOP], consumer_times[LOOP];
-int timer_max_loop[] = {360000, 36000, 3600};
-char tick0[] = "Tick0!\n";
-char tick2[] = "Tick2!\n";
+timer timers[pNum];
 
 void (*functions[functionsNum])(int);
 
@@ -169,38 +167,41 @@ int main() {
     }
 
     // Create Timers
-    timer timer0;
-    timer0.Period = 10;
-    timer0.TasksToExecute = testDurationInSeconds * 100;
-    timer0.StartDelay = 0;
-    timer0.StartFcn = &sampleStartFCN;
-    timer0.StopFcn = &sampleStopFCN;
-    timer0.TimerFcn = &consumerCalculate;
-    timer0.ErrorFcn = &sampleErrorFCN;
-    timer0.UserData = 10;
-    start(&timer0);
 
-    timer timer1;
-    timer1.Period = 100;
-    timer1.TasksToExecute = testDurationInSeconds * 10;
-    timer1.StartDelay = 0;
-    timer1.StartFcn = &sampleStartFCN;
-    timer1.StopFcn = &sampleStopFCN;
-    timer1.TimerFcn = &consumerCalculate;
-    timer1.ErrorFcn = &sampleErrorFCN;
-    timer1.UserData = 20;
-    start(&timer1);
+    for (int i = 0; i < pNum; ++i) {
+        //timer timers[i];
+        timers[i].Period = 10;
+        timers[i].TasksToExecute = testDurationInSeconds * 100;
+        timers[i].StartDelay = 0;
+        timers[i].StartFcn = &sampleStartFCN;
+        timers[i].StopFcn = &sampleStopFCN;
+        timers[i].TimerFcn = &consumerCalculate;
+        timers[i].ErrorFcn = &sampleErrorFCN;
+        timers[i].UserData = 10;
+        start(&timers[i]);
+    }
 
-    timer timer2;
-    timer2.Period = 1000;
-    timer2.TasksToExecute = testDurationInSeconds;
-    timer2.StartDelay = 0;
-    timer2.StartFcn = &sampleStartFCN;
-    timer2.StopFcn = &sampleStopFCN;
-    timer2.TimerFcn = &consumerCalculate;
-    timer2.ErrorFcn = &sampleErrorFCN;
-    timer2.UserData = 30;
-    start(&timer2);
+//    timer timer1;
+//    timer1.Period = 100;
+//    timer1.TasksToExecute = testDurationInSeconds * 10;
+//    timer1.StartDelay = 0;
+//    timer1.StartFcn = &sampleStartFCN;
+//    timer1.StopFcn = &sampleStopFCN;
+//    timer1.TimerFcn = &consumerCalculate;
+//    timer1.ErrorFcn = &sampleErrorFCN;
+//    timer1.UserData = 20;
+//    start(&timer1);
+//
+//    timer timer2;
+//    timer2.Period = 1000;
+//    timer2.TasksToExecute = testDurationInSeconds;
+//    timer2.StartDelay = 0;
+//    timer2.StartFcn = &sampleStartFCN;
+//    timer2.StopFcn = &sampleStopFCN;
+//    timer2.TimerFcn = &consumerCalculate;
+//    timer2.ErrorFcn = &sampleErrorFCN;
+//    timer2.UserData = 30;
+//    start(&timer2);
 
 
     // Thread Join
@@ -523,5 +524,5 @@ void sampleStopFCN(int a) {
 }
 
 void sampleErrorFCN(int a) {
-    printf("ErrorFcn in Producer with User Data = %d\n", a);
+    //printf("ErrorFcn in Producer with User Data = %d\n", a);
 }
