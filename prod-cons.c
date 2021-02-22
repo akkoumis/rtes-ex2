@@ -69,7 +69,7 @@ typedef struct {
 queue *fifo; // The queue instance
 int areProducersActive; // Flag whether there is at least one producer thread active
 FILE *consumer_stats_file, *producer_stats_file[pNum];
-int countFull, countEmpty, indexProducerTimes[pNum], indexConsumerTimes, functionSelection, timersCounter;
+int countFull, countEmpty, indexProducerTimes[pNum], indexConsumerTimes, functionSelection, timersCounter, functionSleepTime;
 long int producer_times[pNum][LOOP], consumer_times[LOOP];
 timer timers[pNum];
 
@@ -113,6 +113,8 @@ int main() {
     indexConsumerTimes = 0;
     timersCounter = 0;
 
+    functionSleepTime=1*1000;
+
     // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
     functions[1] = &consumerCalculate;
@@ -132,8 +134,7 @@ int main() {
     struct tm *info = localtime(&timestamp);
     strftime(buffer, 25, "%Y_%m_%d_%H_%M_%S", info);
     // Consumer file
-    sprintf(name, "stats/cons_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
-            functionSelection);
+    sprintf(name, "stats/cons_%s_p_%d_q_%d_FunctionSleepTime_%d_QS_%d.txt", buffer, pNum, qNum, functionSleepTime, QUEUESIZE);
     //printf("timestamp: %s\n", name);
     consumer_stats_file = fopen(name, "w+");
     if (consumer_stats_file == NULL) {
@@ -502,11 +503,13 @@ void consumerPrint(int a) {
 }
 
 void consumerCalculate(int a) {
-    double temp = 0;
+    usleep(functionSleepTime);
 
-    for (int i = 1; i < 11; ++i) {
-        temp += cos(a * i);
-    }
+    //    double temp = 0;
+//
+//    for (int i = 1; i < 11; ++i) {
+//        temp += cos(a * i);
+//    }
     //printf("cosin %d\n", a);
     //printf("cosin %d\t%lf\t%lf\n", a, cos(a), cos(2*a));
 }
