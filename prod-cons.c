@@ -25,7 +25,7 @@
 #define QUEUESIZE 15
 #define LOOP 360000
 #define pNum 15 // Number of PRODUCER threads
-#define qNum 8 // Number of CONSUMER threads
+#define qNum 100 // Number of CONSUMER threads
 #define functionsNum 2 // Size of the FUNCTION POOL
 
 void *producer(void *timer);
