@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-#define QUEUESIZE 15
+#define QUEUESIZE 100
 #define LOOP 360000
 #define pNum 15 // Number of PRODUCER threads
 #define qNum 8 // Number of CONSUMER threads
