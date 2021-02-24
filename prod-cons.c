@@ -24,7 +24,7 @@
 
 #define QUEUESIZE 15
 #define LOOP 360000
-#define pNum 15 // Number of PRODUCER threads
+#define pNum 1//5 // Number of PRODUCER threads
 #define qNum 8 // Number of CONSUMER threads
 #define functionsNum 2 // Size of the FUNCTION POOL
 
@@ -113,7 +113,7 @@ int main() {
     indexConsumerTimes = 0;
     timersCounter = 0;
 
-    functionSleepTime=1*1000;
+    functionSleepTime = 100 * 1000;
 
     // Set up FUNCTION POOL
     functions[0] = &consumerPrint;
@@ -134,7 +134,8 @@ int main() {
     struct tm *info = localtime(&timestamp);
     strftime(buffer, 25, "%Y_%m_%d_%H_%M_%S", info);
     // Consumer file
-    sprintf(name, "stats/cons_%s_p_%d_q_%d_FunctionSleepTime_%d_QS_%d.txt", buffer, pNum, qNum, functionSleepTime, QUEUESIZE);
+    sprintf(name, "stats/cons_%s_p_%d_q_%d_FunctionSleepTime_%d_QS_%d.txt", buffer, pNum, qNum, functionSleepTime,
+            QUEUESIZE);
     //printf("timestamp: %s\n", name);
     consumer_stats_file = fopen(name, "w+");
     if (consumer_stats_file == NULL) {
@@ -358,7 +359,7 @@ void *producer(void *t) {
             indexProducerTimes[timer_casted->timerID]++;
 
             // Drift Correction
-            if ( timer_casted->Period * 1000 > 150)
+            if (timer_casted->Period * 1000 > 150)
                 drift_difference = 150;
             else
                 drift_difference = timer_casted->Period * 1000;
