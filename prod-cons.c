@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-#define PERIOD 1000
+#define PERIOD 5
 #define QUEUESIZE 200
 #define LOOP 360000
 #define pNum 15 // Number of PRODUCER threads
@@ -133,7 +133,7 @@ int main() {
     struct tm *info = localtime(&timestamp);
     strftime(buffer, 25, "%Y_%m_%d_%H_%M_%S", info);
     // Consumer file
-    sprintf(name, "stats/cons_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, LOOP, QUEUESIZE,
+    sprintf(name, "stats/cons_%s_p_%d_q_%d_PERIOD_%d_QS_%d_function_%d.txt", buffer, pNum, qNum, PERIOD, QUEUESIZE,
             functionSelection);
     //printf("timestamp: %s\n", name);
     consumer_stats_file = fopen(name, "w+");
