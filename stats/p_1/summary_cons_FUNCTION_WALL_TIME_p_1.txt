@@ -1,0 +1,144 @@
+
+ans =
+
+    'cons_2019_04_09_15_16_21_p_1_q_8_FunctionSleepTime_75000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 3358
+       minv: 22
+      meanv: 39.8532194444444
+    medianv: 34
+    stddevv: 54.3709390097237
+        sum: 14347159
+
+
+ans =
+
+    'cons_2019_04_09_16_16_31_p_1_q_8_FunctionSleepTime_80000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 155614
+       minv: 35
+      meanv: 118422.928217215
+    medianv: 120651
+    stddevv: 19726.4409513647
+        sum: 42507199546
+
+
+ans =
+
+    'cons_2019_04_09_17_16_28_p_1_q_8_FunctionSleepTime_85000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 210018
+       minv: 32
+      meanv: 132738.474978841
+    medianv: 135972.5
+    stddevv: 18934.3959887808
+        sum: 44854189034
+
+
+ans =
+
+    'cons_2019_04_09_18_16_26_p_1_q_8_FunctionSleepTime_90000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 181952
+       minv: 36
+      meanv: 148791.397288006
+    medianv: 151454
+    stddevv: 14577.1183495094
+        sum: 47479483666
+
+
+ans =
+
+    'cons_2019_04_09_19_16_23_p_1_q_8_FunctionSleepTime_95000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 194657
+       minv: 40
+      meanv: 148452.398374253
+    medianv: 149563.5
+    stddevv: 19025.2216352748
+        sum: 44889630030
+
+
+ans =
+
+    'cons_2019_04_09_20_16_20_p_1_q_8_FunctionSleepTime_100000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 195713
+       minv: 38
+      meanv: 170116.904737366
+    medianv: 173111
+    stddevv: 14286.944105254
+        sum: 48858595742
+
+
+ans =
+
+    'cons_2019_04_09_22_06_30_p_1_q_8_FunctionSleepTime_65000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 10148
+       minv: 23
+      meanv: 42.2043861111111
+    medianv: 38
+    stddevv: 57.756431587018
+        sum: 15193579
+
+
+ans =
+
+    'cons_2019_04_09_23_06_41_p_1_q_8_FunctionSleepTime_70000_QS_15.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 6220
+       minv: 18
+      meanv: 38.862
+    medianv: 34
+    stddevv: 48.3028059721248
+        sum: 13990320
+
