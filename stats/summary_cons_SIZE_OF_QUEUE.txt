@@ -1,0 +1,144 @@
+
+ans =
+
+    'cons_2019_04_07_01_15_22_p_15_q_8_LOOP_360000_QS_15_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 4589
+       minv: 32
+      meanv: 171.554539914686
+    medianv: 96
+    stddevv: 262.231573986687
+        sum: 281521
+
+
+ans =
+
+    'cons_2019_04_07_02_21_04_p_15_q_8_LOOP_360000_QS_5_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 4117
+       minv: 16
+      meanv: 125.013216395639
+    medianv: 78
+    stddevv: 132.066707443099
+        sum: 41051840
+
+
+ans =
+
+    'cons_2019_04_07_03_21_26_p_15_q_8_LOOP_360000_QS_10_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 4231
+       minv: 16
+      meanv: 129.882136370784
+    medianv: 85
+    stddevv: 129.407289914484
+        sum: 42121686
+
+
+ans =
+
+    'cons_2019_04_07_04_21_46_p_15_q_8_LOOP_360000_QS_20_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 3923
+       minv: 26
+      meanv: 135.122908622909
+    medianv: 82
+    stddevv: 190.530191093845
+        sum: 209981
+
+
+ans =
+
+    'cons_2019_04_07_05_22_08_p_15_q_8_LOOP_360000_QS_25_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 1996
+       minv: 27
+      meanv: 113.298129812981
+    medianv: 87
+    stddevv: 110.148507381597
+        sum: 205976
+
+
+ans =
+
+    'cons_2019_04_08_19_47_24_p_15_q_8_LOOP_360000_QS_50_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 3576
+       minv: 25
+      meanv: 137.56145526057
+    medianv: 83
+    stddevv: 191.221798190847
+        sum: 279800
+
+
+ans =
+
+    'cons_2019_04_08_20_47_46_p_15_q_8_LOOP_360000_QS_75_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 1665
+       minv: 27
+      meanv: 123.556456643793
+    medianv: 83
+    stddevv: 154.99576257885
+        sum: 198061
+
+
+ans =
+
+    'cons_2019_04_08_21_48_06_p_15_q_8_LOOP_360000_QS_100_function_2.txt'
+
+
+consumer = 
+
+  <a href="matlab:helpPopup struct" style="font-weight:bold">struct</a> with fields:
+
+       name: 'consumer'
+       maxv: 4583
+       minv: 31
+      meanv: 99.6922675026123
+    medianv: 58.5
+    stddevv: 225.872419968057
+        sum: 190811
+
