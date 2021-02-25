@@ -22,7 +22,8 @@
 #include <sys/time.h>
 #include <math.h>
 
-#define QUEUESIZE 15
+#define PERIOD 1
+#define QUEUESIZE 200
 #define LOOP 360000
 #define pNum 15 // Number of PRODUCER threads
 #define qNum 8 // Number of CONSUMER threads
@@ -143,7 +144,7 @@ int main() {
     }
     // Producer file
     for (int tid = 0; tid < pNum; ++tid) {
-        sprintf(name, "stats/prod_%d_%s_p_%d_q_%d_LOOP_%d_QS_%d_function_%d.txt", tid, buffer, pNum, qNum, LOOP,
+        sprintf(name, "stats/prod_%d_%s_p_%d_q_%d_PERIOD_%d_QS_%d_function_%d.txt", tid, buffer, pNum, qNum, PERIOD,
                 QUEUESIZE,
                 functionSelection);
         //printf("timestamp: %s\n", name);
@@ -170,7 +171,7 @@ int main() {
 
     for (int i = 0; i < pNum; ++i) {
         //timer timers[i];
-        timers[i].Period = 10;
+        timers[i].Period = PERIOD;
         timers[i].TasksToExecute = testDurationInSeconds * 100;
         timers[i].StartDelay = 0;
         timers[i].StartFcn = &sampleStartFCN;
