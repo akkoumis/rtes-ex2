@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-#define PERIOD 1
+#define PERIOD 1000
 #define QUEUESIZE 200
 #define LOOP 360000
 #define pNum 15 // Number of PRODUCER threads
@@ -172,7 +172,7 @@ int main() {
     for (int i = 0; i < pNum; ++i) {
         //timer timers[i];
         timers[i].Period = PERIOD;
-        timers[i].TasksToExecute = testDurationInSeconds * 100;
+        timers[i].TasksToExecute = testDurationInSeconds * 1000 / PERIOD;
         timers[i].StartDelay = 0;
         timers[i].StartFcn = &sampleStartFCN;
         timers[i].StopFcn = &sampleStopFCN;
@@ -358,7 +358,7 @@ void *producer(void *t) {
             indexProducerTimes[timer_casted->timerID]++;
 
             // Drift Correction
-            if ( timer_casted->Period * 1000 > 150)
+            if (timer_casted->Period * 1000 > 150)
                 drift_difference = 150;
             else
                 drift_difference = timer_casted->Period * 1000;
